@@ -1,0 +1,6 @@
+query findAllRestaurants {
+  findAllRestaurants {
+    id
+    name
+  }
+}
