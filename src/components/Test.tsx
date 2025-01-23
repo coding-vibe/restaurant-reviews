@@ -1,17 +1,21 @@
-import { useMutation, useLazyQuery } from '@apollo/client';
-import Cookies from 'js-cookie';
+import { useMutation, useLazyQuery } from "@apollo/client";
+import Cookies from "js-cookie";
 import {
   LoginUserDocument,
   FindAllRestaurantsDocument,
   LoginUserInput,
-} from '../__generated__/graphql';
-import { useEffect } from 'react';
+} from "../__generated__/graphql";
+import { useEffect } from "react";
 
 export default function Test() {
-  const [login, { data: loginData }] = useMutation<LoginUserInput>(LoginUserDocument);
-  const [findAllRestaurants, { data }] = useLazyQuery(FindAllRestaurantsDocument, {
-    fetchPolicy: 'network-only',
-  });
+  const [login, { data: loginData }] =
+    useMutation<LoginUserInput>(LoginUserDocument);
+  const [findAllRestaurants, { data }] = useLazyQuery(
+    FindAllRestaurantsDocument,
+    {
+      fetchPolicy: "network-only",
+    }
+  );
 
   console.log(loginData);
 
@@ -21,8 +25,12 @@ export default function Test() {
 
   useEffect(() => {
     if (loginData) {
-      Cookies.set('accessToken', loginData.loginUser.accessToken, { expires: 1 });
-      Cookies.set('refreshToken', loginData.loginUser.refreshToken, { expires: 1 });
+      Cookies.set("accessToken", loginData.loginUser.accessToken, {
+        expires: 1,
+      });
+      Cookies.set("refreshToken", loginData.loginUser.refreshToken, {
+        expires: 1,
+      });
     }
   }, [loginData]);
 
@@ -30,7 +38,11 @@ export default function Test() {
     <>
       <button
         onClick={() =>
-          login({ variables: { input: { email: 'Clair22@hotmail.com', password: 'Qwerty123!' } } })
+          login({
+            variables: {
+              input: { email: "Ignacio62@gmail.com", password: "Qwerty123!" },
+            },
+          })
         }
       >
         Login
