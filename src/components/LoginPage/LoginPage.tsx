@@ -43,12 +43,12 @@ export default function LoginPage() {
 
   // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSuccess = async (data: LoginProps) => {
+  const handleSuccess = async (data: LoginUserInput) => {
     login({
       variables: {
         input: {
-          email: "Ignacio62@gmail.com",
-          password: "Qwerty123!",
+          email: data.email,
+          password: data.password,
         },
       },
     });
