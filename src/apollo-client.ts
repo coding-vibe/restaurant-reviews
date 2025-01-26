@@ -1,33 +1,36 @@
-import { ApolloClient, InMemoryCache } from '@apollo/client';
-import { ApolloLink, Observable } from '@apollo/client/core';
-import { createHttpLink } from '@apollo/client/link/http';
-import { setContext } from '@apollo/client/link/context';
-import { onError } from '@apollo/client/link/error';
-import { FetchResult } from '@apollo/client/link/core';
-import { GraphQLError } from 'graphql';
-import Cookies from 'js-cookie';
+import { ApolloClient, InMemoryCache } from "@apollo/client";
+import { ApolloLink, Observable } from "@apollo/client/core";
+import { createHttpLink } from "@apollo/client/link/http";
+import { setContext } from "@apollo/client/link/context";
+import { onError } from "@apollo/client/link/error";
+import { FetchResult } from "@apollo/client/link/core";
+import { GraphQLError } from "graphql";
+import Cookies from "js-cookie";
+
+import { TokenNames } from "./constants/tokens";
+import setToken from "./utils/setToken";
 
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_API_URL,
 });
 
 // TODO: correct on BE, should be UNAUTHENTICATED
-const UNAUTHENTICATED_ERROR_CODE = 'FORBIDDEN';
+const UNAUTHENTICATED_ERROR_CODE = "FORBIDDEN";
 
 const refreshToken = async () => {
-  const refreshToken = Cookies.get('refreshToken');
+  const refreshToken = Cookies.get(TokenNames.REFRESH_TOKEN);
 
   if (!refreshToken) {
     return null;
   }
 
   const response = await fetch(import.meta.env.VITE_API_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      operationName: REFRESH_TOKEN,
+      operationName: TokenNames.REFRESH_TOKEN,
       variables: {
         token: refreshToken,
       },
@@ -43,27 +46,25 @@ const refreshToken = async () => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to refresh token');
+    throw new Error("Failed to refresh token");
   }
 
   const { data } = await response.json();
 
   if (!data) {
-    throw new Error('No data returned from server');
+    throw new Error("No data returned from server");
   }
 
-  Cookies.set('accessToken', data.refreshToken.accessToken, { expires: 1 });
-  Cookies.set('refreshToken', data.refreshToken.refreshToken, { expires: 1 });
+  setToken(TokenNames.ACCESS_TOKEN, data.loginUser.accessToken, 15 / (24 * 60));
+  setToken(TokenNames.REFRESH_TOKEN, data.loginUser.refreshToken, 8 / 24);
 
   return data.refreshToken.accessToken;
 };
 
-const REFRESH_TOKEN = 'refreshToken';
-
 const authLink = setContext((operation, { headers }) => {
-  const token = Cookies.get('accessToken');
+  const token = Cookies.get(TokenNames.ACCESS_TOKEN);
 
-  if (!token || operation.operationName === REFRESH_TOKEN) {
+  if (!token || operation.operationName === TokenNames.REFRESH_TOKEN) {
     return { headers };
   }
 
@@ -75,41 +76,45 @@ const authLink = setContext((operation, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (graphQLErrors) {
-    for (const err of graphQLErrors) {
-      switch (err?.extensions?.code) {
-        case UNAUTHENTICATED_ERROR_CODE:
-          if (operation.operationName === REFRESH_TOKEN) return;
+const errorLink = onError(
+  ({ graphQLErrors, networkError, operation, forward }) => {
+    if (graphQLErrors) {
+      for (const err of graphQLErrors) {
+        switch (err?.extensions?.code) {
+          case UNAUTHENTICATED_ERROR_CODE:
+            if (operation.operationName === TokenNames.REFRESH_TOKEN) return;
 
-          return new Observable<FetchResult<Record<string, unknown>>>((observer) => {
-            (async () => {
-              try {
-                const accessToken = await refreshToken();
+            return new Observable<FetchResult<Record<string, unknown>>>(
+              (observer) => {
+                (async () => {
+                  try {
+                    const accessToken = await refreshToken();
 
-                if (!accessToken) {
-                  throw new GraphQLError('No access token provided');
-                }
+                    if (!accessToken) {
+                      throw new GraphQLError("No access token provided");
+                    }
 
-                // Retry the failed request
-                const subscriber = {
-                  next: observer.next.bind(observer),
-                  error: observer.error.bind(observer),
-                  complete: observer.complete.bind(observer),
-                };
+                    // Retry the failed request
+                    const subscriber = {
+                      next: observer.next.bind(observer),
+                      error: observer.error.bind(observer),
+                      complete: observer.complete.bind(observer),
+                    };
 
-                forward(operation).subscribe(subscriber);
-              } catch (err) {
-                observer.error(err);
+                    forward(operation).subscribe(subscriber);
+                  } catch (err) {
+                    observer.error(err);
+                  }
+                })();
               }
-            })();
-          });
+            );
+        }
       }
     }
-  }
 
-  if (networkError) console.log(`[Network error]: ${networkError}`);
-});
+    if (networkError) console.log(`[Network error]: ${networkError}`);
+  }
+);
 
 const client = new ApolloClient({
   link: ApolloLink.from([errorLink, authLink, httpLink]),

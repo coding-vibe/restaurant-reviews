@@ -1,19 +1,57 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { useNavigate, generatePath } from "react-router";
+import { useMutation } from "@apollo/client";
 import { FormContainer, TextFieldElement } from "react-hook-form-mui";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { useSnackbar } from "notistack";
 
+import { TokenNames } from "../../constants/tokens";
+import setToken from "../../utils/setToken";
+import {
+  LoginUserDocument,
+  LoginUserMutation,
+  LoginUserMutationVariables,
+  LoginUserInput,
+} from "../../__generated__/graphql";
 import * as classes from "./styles";
 
 export default function LoginPage() {
-  // @ts-ignore
-  const handleSuccess = (data) => {
-    console.log("Form submitted successfully:", data);
-  };
-  // @ts-ignore
-  const handleError = (errors) => {
-    console.error("Form submission errors:", errors);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const reviewsPage = generatePath("/restaurant/:id/reviews", {
+    id: `${1}`,
+  });
+
+  const [login, { loading }] = useMutation<
+    LoginUserMutation,
+    LoginUserMutationVariables
+  >(LoginUserDocument, {
+    onCompleted: (data) => {
+      setToken(
+        TokenNames.ACCESS_TOKEN,
+        data.loginUser.accessToken,
+        15 / (24 * 60)
+      );
+      setToken(TokenNames.REFRESH_TOKEN, data.loginUser.refreshToken, 8 / 24);
+      navigate(reviewsPage);
+    },
+    onError: () => {
+      enqueueSnackbar("Authorization failed", {
+        variant: "error",
+      });
+    },
+  });
+
+  const handleSubmit = (data: LoginUserInput) => {
+    login({
+      variables: {
+        input: {
+          email: data.email,
+          password: data.password,
+        },
+      },
+    });
   };
 
   return (
@@ -21,22 +59,21 @@ export default function LoginPage() {
       <Typography component="h1" css={classes.titleIndent} variant="h4">
         Login
       </Typography>
-      <FormContainer
-        defaultValues={{ name: "" }}
-        onSuccess={handleSuccess}
-        onError={handleError}
+      <FormContainer<LoginUserInput>
+        defaultValues={{ email: "" }}
+        onSuccess={handleSubmit}
         mode="onBlur"
       >
         <Stack spacing={2}>
           <TextFieldElement
-            name="name"
-            label="Name"
+            name="email"
+            label="Email"
             required
             rules={{
-              required: "Name is required",
-              minLength: {
-                value: 3,
-                message: "Name must be at least 3 characters",
+              required: "Email",
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Please enter a valid email address",
               },
             }}
           />
@@ -54,10 +91,11 @@ export default function LoginPage() {
             }}
           />
           <Button
+            fullWidth
+            color="secondary"
+            loading={loading}
             type={"submit"}
             variant="contained"
-            color="secondary"
-            fullWidth
           >
             Submit
           </Button>
