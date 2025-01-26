@@ -4,6 +4,7 @@ import { FormContainer, TextFieldElement } from "react-hook-form-mui";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Paper from "@mui/material/Paper";
 import { useSnackbar } from "notistack";
 
 import { TokenNames } from "../../constants/tokens";
@@ -14,13 +15,12 @@ import {
   LoginUserMutationVariables,
   LoginUserInput,
 } from "../../__generated__/graphql";
-import * as classes from "./styles";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const reviewsPage = generatePath("/restaurant/:id/reviews", {
-    id: `${1}`,
+    id: "1",
   });
 
   const [login, { loading }] = useMutation<
@@ -55,9 +55,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div>
-      <Typography component="h1" css={classes.titleIndent} variant="h4">
-        Login
+    <Paper component="fieldset">
+      <Typography component="legend" variant="h2">
+        Please enter your login details
       </Typography>
       <FormContainer<LoginUserInput>
         defaultValues={{ email: "" }}
@@ -101,6 +101,6 @@ export default function LoginPage() {
           </Button>
         </Stack>
       </FormContainer>
-    </div>
+    </Paper>
   );
 }
