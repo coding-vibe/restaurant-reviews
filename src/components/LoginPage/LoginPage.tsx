@@ -1,38 +1,40 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import { useNavigate } from "react-router";
+import { useNavigate, generatePath } from "react-router";
 import { useMutation } from "@apollo/client";
+import { FormContainer, TextFieldElement } from "react-hook-form-mui";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { useSnackbar } from "notistack";
+
+import { TokenNames } from "../../constants/tokens";
+import setToken from "../../utils/setToken";
 import {
   LoginUserDocument,
   LoginUserMutation,
   LoginUserMutationVariables,
   LoginUserInput,
 } from "../../__generated__/graphql";
-import Cookies from "js-cookie";
-import { FormContainer, TextFieldElement } from "react-hook-form-mui";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import LoadingButton from "@mui/lab/LoadingButton";
-import { useSnackbar } from "notistack";
-
-import { TokenNames } from "../../constants/tokens";
 import * as classes from "./styles";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const reviewsPage = generatePath("/restaurant/:id/reviews", {
+    id: `${1}`,
+  });
 
   const [login, { loading }] = useMutation<
     LoginUserMutation,
     LoginUserMutationVariables
   >(LoginUserDocument, {
     onCompleted: (data) => {
-      Cookies.set(TokenNames.ACCESS_TOKEN, data.loginUser.accessToken, {
-        expires: 15 / (24 * 60),
-      });
-      Cookies.set(TokenNames.REFRESH_TOKEN, data.loginUser.refreshToken, {
-        expires: 8 / 24,
-      });
-      navigate("/restaurant/1/reviews");
+      setToken(
+        TokenNames.ACCESS_TOKEN,
+        data.loginUser.accessToken,
+        15 / (24 * 60)
+      );
+      setToken(TokenNames.REFRESH_TOKEN, data.loginUser.refreshToken, 8 / 24);
+      navigate(reviewsPage);
     },
     onError: () => {
       enqueueSnackbar("Authorization failed", {
@@ -41,9 +43,7 @@ export default function LoginPage() {
     },
   });
 
-  // @ts-ignore
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSuccess = async (data: LoginUserInput) => {
+  const handleSubmit = (data: LoginUserInput) => {
     login({
       variables: {
         input: {
@@ -61,7 +61,7 @@ export default function LoginPage() {
       </Typography>
       <FormContainer<LoginUserInput>
         defaultValues={{ email: "" }}
-        onSuccess={handleSuccess}
+        onSuccess={handleSubmit}
         mode="onBlur"
       >
         <Stack spacing={2}>
@@ -71,9 +71,9 @@ export default function LoginPage() {
             required
             rules={{
               required: "Email",
-              minLength: {
-                value: 3,
-                message: "Email must be at least 3 characters",
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Please enter a valid email address",
               },
             }}
           />
@@ -90,7 +90,7 @@ export default function LoginPage() {
               },
             }}
           />
-          <LoadingButton
+          <Button
             fullWidth
             color="secondary"
             loading={loading}
@@ -98,7 +98,7 @@ export default function LoginPage() {
             variant="contained"
           >
             Submit
-          </LoadingButton>
+          </Button>
         </Stack>
       </FormContainer>
     </div>

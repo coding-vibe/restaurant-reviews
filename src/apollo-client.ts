@@ -8,6 +8,7 @@ import { GraphQLError } from "graphql";
 import Cookies from "js-cookie";
 
 import { TokenNames } from "./constants/tokens";
+import setToken from "./utils/setToken";
 
 const httpLink = createHttpLink({
   uri: import.meta.env.VITE_API_URL,
@@ -54,12 +55,8 @@ const refreshToken = async () => {
     throw new Error("No data returned from server");
   }
 
-  Cookies.set(TokenNames.ACCESS_TOKEN, data.refreshToken.accessToken, {
-    expires: 1,
-  });
-  Cookies.set(TokenNames.REFRESH_TOKEN, data.refreshToken.refreshToken, {
-    expires: 1,
-  });
+  setToken(TokenNames.ACCESS_TOKEN, data.loginUser.accessToken, 15 / (24 * 60));
+  setToken(TokenNames.REFRESH_TOKEN, data.loginUser.refreshToken, 8 / 24);
 
   return data.refreshToken.accessToken;
 };
