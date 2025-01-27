@@ -1,6 +1,24 @@
-query findAllRestaurants {
-  findAllRestaurants {
-    id
-    name
+query findAllRestaurantReviews(
+  $restaurantName: String!
+  $input: ReviewPaginationInput!
+) {
+  findAllRestaurantReviews(restaurantName: $restaurantName, input: $input) {
+    edges {
+      node {
+        id
+        rating
+        feedback
+        createdAt
+        author {
+          id
+          firstName
+          lastName
+        }
+        restaurant {
+          id
+          name
+        }
+      }
+    }
   }
 }

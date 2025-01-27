@@ -11,15 +11,15 @@ import ReviewsPage from "./components/ReviewsPage/ReviewsPage.tsx";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ApolloProvider client={client}>
-      <BrowserRouter>
-        <SnackbarProvider>
+      <SnackbarProvider>
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<div>Home page</div>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/restaurant/:id/reviews" element={<ReviewsPage />} />
           </Routes>
-        </SnackbarProvider>
-      </BrowserRouter>
+        </BrowserRouter>
+      </SnackbarProvider>
     </ApolloProvider>
   </StrictMode>
 );
