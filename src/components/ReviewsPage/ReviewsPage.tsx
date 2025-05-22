@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useParams } from "react-router";
-import { useQuery } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Table from "@mui/material/Table";
@@ -10,16 +11,24 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
+import { useSnackbar } from "notistack";
 
 import {
+  CreateReviewDocument,
+  CreateReviewMutation,
+  CreateReviewMutationVariables,
+  CreateReviewInput,
   FindAllRestaurantReviewsDocument,
   FindAllRestaurantReviewsQuery,
   FindAllRestaurantReviewsQueryVariables,
 } from "../../__generated__/graphql";
+import ReviewForm from "../ReviewForm";
 
 export default function ReviewsPage() {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const { id } = useParams();
-  console.log(id);
+  const { enqueueSnackbar } = useSnackbar();
 
   const { data, loading, error } = useQuery<
     FindAllRestaurantReviewsQuery,
@@ -31,15 +40,50 @@ export default function ReviewsPage() {
     },
   });
 
+  const [createReview] = useMutation<
+    CreateReviewMutation,
+    CreateReviewMutationVariables
+  >(CreateReviewDocument, {
+    onCompleted: (data) => {
+      console.log(data);
+      enqueueSnackbar("Review created successfully", {
+        variant: "success",
+      });
+    },
+    onError: () => {
+      enqueueSnackbar("Creating review failed", {
+        variant: "error",
+      });
+    },
+  });
+
+  const handleSubmit = (data: CreateReviewInput) => {
+    createReview({
+      variables: {
+        createReviewInput: {
+          restaurantId: Number(id),
+          rating: Number(data.rating),
+          feedback: data.feedback,
+        },
+      },
+    });
+  };
+
   if (loading) return <CircularProgress color="secondary" />;
-  if (error) return;
-  <Alert severity="error">Fetching data failed</Alert>;
+  if (error) return <Alert severity="error">Fetching data failed</Alert>;
 
   return (
     <TableContainer component={Paper}>
       <Typography component="h1" variant="h2">
         Restaurant Reviews
       </Typography>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => setIsOpen(true)}
+      >
+        Add review
+      </Button>
       <Table>
         <TableHead>
           <TableRow>
@@ -67,6 +111,7 @@ export default function ReviewsPage() {
             ))}
         </TableBody>
       </Table>
+      {isOpen && <ReviewForm setIsOpen={setIsOpen} onSubmit={handleSubmit} />}
     </TableContainer>
   );
 }

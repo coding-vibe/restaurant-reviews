@@ -6,9 +6,7 @@ const setToken = (
   token: string,
   expirationTerm?: number | Date
 ) => {
-  const name =
-    tokenName === TokenNames.ACCESS_TOKEN ? `Bearer ${tokenName}` : tokenName;
-  Cookies.set(name, token, { expires: expirationTerm });
+  Cookies.set(tokenName, token, { expires: expirationTerm });
 };
 
 export default setToken;
