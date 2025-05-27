@@ -1,0 +1,11 @@
+fragment ReviewDetails on Review {
+  id
+  rating
+  feedback
+  createdAt
+  author {
+    id
+    firstName
+    lastName
+  }
+}

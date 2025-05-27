@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useParams } from "react-router";
 import { useQuery, useMutation } from "@apollo/client";
 import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -19,14 +22,35 @@ import {
   CreateReviewMutation,
   CreateReviewMutationVariables,
   CreateReviewInput,
+  MutationDeleteReviewArgs,
   FindAllRestaurantReviewsDocument,
   FindAllRestaurantReviewsQuery,
   FindAllRestaurantReviewsQueryVariables,
+  EditReviewInput,
+  EditReviewDocument,
+  EditReviewMutation,
+  EditReviewMutationVariables,
+  DeleteReviewDocument,
+  DeleteReviewMutation,
+  DeleteReviewMutationVariables,
 } from "../../__generated__/graphql";
 import ReviewForm from "../ReviewForm";
 
+interface Review {
+  id: number;
+  rating: number;
+  feedback: string;
+  createdAt: string;
+  author: {
+    id: number;
+    firstName: string;
+    lastName: string;
+  };
+}
+
 export default function ReviewsPage() {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpenCreateReview, setIsOpenCreateReview] = useState<boolean>(false);
+  const [reviewToEdit, setReviewToEdit] = useState<Review | null>(null);
   const { id } = useParams();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -57,7 +81,7 @@ export default function ReviewsPage() {
     },
   });
 
-  const handleSubmit = (data: CreateReviewInput) => {
+  const handleCreateReview = (data: CreateReviewInput) => {
     createReview({
       variables: {
         createReviewInput: {
@@ -66,7 +90,72 @@ export default function ReviewsPage() {
           feedback: data.feedback,
         },
       },
+      refetchQueries: [
+        FindAllRestaurantReviewsDocument,
+        "findAllRestaurantReviews",
+      ],
     });
+    setIsOpenCreateReview(false);
+  };
+
+  const [deleteReview] = useMutation<
+    DeleteReviewMutation,
+    DeleteReviewMutationVariables
+  >(DeleteReviewDocument, {
+    onCompleted: (data) => {
+      console.log(data);
+      enqueueSnackbar("Review deleted successfully", {
+        variant: "success",
+      });
+    },
+    onError: () => {
+      enqueueSnackbar("Deleting review failed", {
+        variant: "error",
+      });
+    },
+  });
+
+  const handleDeleteReview = (data: MutationDeleteReviewArgs) => {
+    deleteReview({
+      variables: {
+        deleteReviewId: data.id,
+      },
+      refetchQueries: [
+        FindAllRestaurantReviewsDocument,
+        "findAllRestaurantReviews",
+      ],
+    });
+  };
+
+  const [editReview] = useMutation<
+    EditReviewMutation,
+    EditReviewMutationVariables
+  >(EditReviewDocument, {
+    onCompleted: (data) => {
+      console.log(data);
+      enqueueSnackbar("Review edited successfully", {
+        variant: "success",
+      });
+    },
+    onError: () => {
+      enqueueSnackbar("Editing review failed", {
+        variant: "error",
+      });
+    },
+  });
+
+  const handleEditReview = (data: EditReviewInput) => {
+    if (!reviewToEdit) return;
+    editReview({
+      variables: {
+        reviewId: reviewToEdit.id.toString(),
+        body: {
+          rating: Number(data.rating),
+          feedback: data.feedback,
+        },
+      },
+    });
+    setReviewToEdit(null);
   };
 
   if (loading) return <CircularProgress color="secondary" />;
@@ -74,16 +163,18 @@ export default function ReviewsPage() {
 
   return (
     <TableContainer component={Paper}>
-      <Typography component="h1" variant="h2">
-        Restaurant Reviews
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setIsOpen(true)}
-      >
-        Add review
-      </Button>
+      <Box display="flex" justifyContent="space-around">
+        <Typography component="h1" variant="h2">
+          Restaurant Reviews
+        </Typography>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => setIsOpenCreateReview(true)}
+        >
+          Add review
+        </Button>
+      </Box>
       <Table>
         <TableHead>
           <TableRow>
@@ -107,11 +198,65 @@ export default function ReviewsPage() {
                 <TableCell>
                   {new Date(parseInt(node.createdAt)).toLocaleString()}
                 </TableCell>
+                <TableCell>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => setReviewToEdit(node)}
+                  >
+                    Edit review
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() =>
+                      handleDeleteReview({ id: node.id.toString() })
+                    }
+                  >
+                    Delete review
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
         </TableBody>
       </Table>
-      {isOpen && <ReviewForm setIsOpen={setIsOpen} onSubmit={handleSubmit} />}
+      {isOpenCreateReview && (
+        <Dialog
+          open={isOpenCreateReview}
+          onClose={() => setIsOpenCreateReview(false)}
+          component="fieldset"
+        >
+          <Box sx={{ padding: "30px 20px" }}>
+            <DialogTitle component="legend" variant="h4" sx={{ p: 0 }}>
+              Please create a review
+            </DialogTitle>
+            <ReviewForm
+              setIsOpen={setIsOpenCreateReview}
+              onSubmit={handleCreateReview}
+            />
+          </Box>
+        </Dialog>
+      )}
+      {reviewToEdit && (
+        <Dialog
+          open={!!reviewToEdit}
+          onClose={() => setReviewToEdit(null)}
+          component="fieldset"
+        >
+          <Box sx={{ padding: "30px 20px" }}>
+            <DialogTitle component="legend" variant="h4" sx={{ p: 0 }}>
+              Please edit a review
+            </DialogTitle>
+            <ReviewForm
+              initialValues={reviewToEdit}
+              setIsOpen={() => setReviewToEdit(null)}
+              onSubmit={handleEditReview}
+            />
+          </Box>
+        </Dialog>
+      )}
     </TableContainer>
   );
 }

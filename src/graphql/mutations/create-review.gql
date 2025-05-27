@@ -1,7 +1,5 @@
 mutation CreateReview($createReviewInput: CreateReviewInput!) {
   createReview(createReviewInput: $createReviewInput) {
-    id
-    rating
-    feedback
+    ...ReviewDetails
   }
 }

@@ -1,0 +1,5 @@
+mutation EditReview($reviewId: ID!, $body: EditReviewInput!) {
+  editReview(reviewId: $reviewId, body: $body) {
+    ...ReviewDetails
+  }
+}
