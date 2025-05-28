@@ -28,7 +28,7 @@ export default function ReviewForm({
 }: ReviewFormProps) {
   return (
     <FormContainer<CreateReviewInput>
-      defaultValues={initialValues || { feedback: "", rating: 0 }}
+      defaultValues={initialValues}
       onSuccess={onSubmit}
       mode="onBlur"
     >

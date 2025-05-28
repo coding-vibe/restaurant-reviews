@@ -5,15 +5,7 @@ query findAllRestaurantReviews(
   findAllRestaurantReviews(restaurantName: $restaurantName, input: $input) {
     edges {
       node {
-        id
-        rating
-        feedback
-        createdAt
-        author {
-          id
-          firstName
-          lastName
-        }
+        ...ReviewDetails
         restaurant {
           id
           name

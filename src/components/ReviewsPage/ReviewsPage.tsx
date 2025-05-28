@@ -79,6 +79,10 @@ export default function ReviewsPage() {
         variant: "error",
       });
     },
+    refetchQueries: [
+      FindAllRestaurantReviewsDocument,
+      "findAllRestaurantReviews",
+    ],
   });
 
   const handleCreateReview = (data: CreateReviewInput) => {
@@ -90,10 +94,6 @@ export default function ReviewsPage() {
           feedback: data.feedback,
         },
       },
-      refetchQueries: [
-        FindAllRestaurantReviewsDocument,
-        "findAllRestaurantReviews",
-      ],
     });
     setIsOpenCreateReview(false);
   };
@@ -113,6 +113,10 @@ export default function ReviewsPage() {
         variant: "error",
       });
     },
+    refetchQueries: [
+      FindAllRestaurantReviewsDocument,
+      "findAllRestaurantReviews",
+    ],
   });
 
   const handleDeleteReview = (data: MutationDeleteReviewArgs) => {
@@ -120,10 +124,6 @@ export default function ReviewsPage() {
       variables: {
         deleteReviewId: data.id,
       },
-      refetchQueries: [
-        FindAllRestaurantReviewsDocument,
-        "findAllRestaurantReviews",
-      ],
     });
   };
 
@@ -188,21 +188,21 @@ export default function ReviewsPage() {
         </TableHead>
         <TableBody>
           {data?.findAllRestaurantReviews.edges &&
-            data.findAllRestaurantReviews.edges.map(({ node }) => (
-              <TableRow key={node.id}>
-                <TableCell>{node.author.id}</TableCell>
-                <TableCell>{node.author.firstName}</TableCell>
-                <TableCell>{node.author.lastName}</TableCell>
-                <TableCell>{node.rating}</TableCell>
-                <TableCell>{node.feedback}</TableCell>
+            data.findAllRestaurantReviews.edges.map(({ node: review }) => (
+              <TableRow key={review.id}>
+                <TableCell>{review.author.id}</TableCell>
+                <TableCell>{review.author.firstName}</TableCell>
+                <TableCell>{review.author.lastName}</TableCell>
+                <TableCell>{review.rating}</TableCell>
+                <TableCell>{review.feedback}</TableCell>
                 <TableCell>
-                  {new Date(parseInt(node.createdAt)).toLocaleString()}
+                  {new Date(parseInt(review.createdAt)).toLocaleString()}
                 </TableCell>
                 <TableCell>
                   <Button
                     variant="contained"
                     color="secondary"
-                    onClick={() => setReviewToEdit(node)}
+                    onClick={() => setReviewToEdit(review)}
                   >
                     Edit review
                   </Button>
@@ -212,7 +212,7 @@ export default function ReviewsPage() {
                     variant="contained"
                     color="secondary"
                     onClick={() =>
-                      handleDeleteReview({ id: node.id.toString() })
+                      handleDeleteReview({ id: review.id.toString() })
                     }
                   >
                     Delete review
@@ -222,41 +222,39 @@ export default function ReviewsPage() {
             ))}
         </TableBody>
       </Table>
-      {isOpenCreateReview && (
-        <Dialog
-          open={isOpenCreateReview}
-          onClose={() => setIsOpenCreateReview(false)}
-          component="fieldset"
-        >
-          <Box sx={{ padding: "30px 20px" }}>
-            <DialogTitle component="legend" variant="h4" sx={{ p: 0 }}>
-              Please create a review
-            </DialogTitle>
-            <ReviewForm
-              setIsOpen={setIsOpenCreateReview}
-              onSubmit={handleCreateReview}
-            />
-          </Box>
-        </Dialog>
-      )}
-      {reviewToEdit && (
-        <Dialog
-          open={!!reviewToEdit}
-          onClose={() => setReviewToEdit(null)}
-          component="fieldset"
-        >
-          <Box sx={{ padding: "30px 20px" }}>
-            <DialogTitle component="legend" variant="h4" sx={{ p: 0 }}>
-              Please edit a review
-            </DialogTitle>
-            <ReviewForm
-              initialValues={reviewToEdit}
-              setIsOpen={() => setReviewToEdit(null)}
-              onSubmit={handleEditReview}
-            />
-          </Box>
-        </Dialog>
-      )}
+      <Dialog
+        open={isOpenCreateReview}
+        onClose={() => setIsOpenCreateReview(false)}
+        component="fieldset"
+      >
+        <Box sx={{ padding: "30px 20px" }}>
+          <DialogTitle component="legend" variant="h4" sx={{ p: 0 }}>
+            Please create a review
+          </DialogTitle>
+          <ReviewForm
+            setIsOpen={setIsOpenCreateReview}
+            onSubmit={handleCreateReview}
+          />
+        </Box>
+      </Dialog>
+      <Dialog
+        open={!!reviewToEdit}
+        onClose={() => setReviewToEdit(null)}
+        component="fieldset"
+      >
+        <Box sx={{ padding: "30px 20px" }}>
+          <DialogTitle component="legend" variant="h4" sx={{ p: 0 }}>
+            Please edit a review
+          </DialogTitle>
+          <ReviewForm
+            initialValues={
+              reviewToEdit ? reviewToEdit : { feedback: "", rating: 0 }
+            }
+            setIsOpen={() => setReviewToEdit(null)}
+            onSubmit={handleEditReview}
+          />
+        </Box>
+      </Dialog>
     </TableContainer>
   );
 }
